@@ -315,29 +315,70 @@ Explicitly state when results are unavailable
 Never infer or summarize unpublished outcomes
 
 
-9.3 Web Research MCP Tool
+9.3 Web Research MCP Tools
+Two distinct tools serve different web access patterns:
+
+9.3a web-fetch Tool
 Purpose
-Enable access to authoritative public web sources when PubMed or ClinicalTrials.gov are insufficient.
-Core Responsibilities
+Retrieve content from a specific, known public URL (e.g., a guideline document, press release, or known page).
+Inputs
 
-Retrieve content from reputable, publicly accessible sources
-Preserve original URLs and publication context
-Conceptual Inputs
+url: string — must be a fully qualified http:// or https:// URL
+Outputs
 
-Query terms or URLs
-Conceptual Outputs
-
-Source URL
-Extracted relevant content or summary
-Publication or update date (when available)
+url: string — the retrieved URL
+content: string — up to 5000 characters of page text
+retrievedAt: string — ISO 8601 timestamp
+contentType: string — HTTP Content-Type header value
+isWebSource: true — always set; never isPeerReviewed
 Guarantees
 
-Sources are explicitly identified
-Content provenance is preserved
+url must be provided; empty or non-URL values throw immediately
+HTTP errors (non-2xx) throw with the status code
+Content is never labeled as peer-reviewed
 Failure Behavior
 
-Clearly indicate when sources are unavailable or unreliable
-Avoid presenting web content as peer‑reviewed evidence
+Throw on missing url, invalid URL format, network errors, or HTTP errors
+Never return partial content without noting truncation
+
+9.3b web-search Tool
+Purpose
+Perform an open-ended keyword search of the public web using Bing Search API when the researcher needs regulatory guidance, news, announcements, or policy information not available in PubMed or ClinicalTrials.gov.
+Inputs
+
+query: string — natural language or keyword search string (required)
+maxResults: number — maximum results to return (default: 5, max: 10)
+Outputs
+
+Array of web results, each containing:
+  url: string — source URL
+  title: string — page title
+  snippet: string — brief excerpt from the page
+  publishedDate: string | undefined — publication date if available
+  isWebSource: true — always set; never isPeerReviewed
+totalFound: number — total results returned
+query: string — the query string used
+Guarantees
+
+All results tagged isWebSource: true
+No result is ever labeled as peer-reviewed
+Empty results surfaced explicitly (totalFound: 0, results: [])
+Requires BING_SEARCH_API_KEY environment variable
+Query string must be non-empty
+Failure Behavior
+
+Throw on missing or empty query
+Throw on missing BING_SEARCH_API_KEY
+Throw on Bing API HTTP errors (non-2xx)
+Return empty result set (not error) when Bing returns zero hits
+Never fabricate or infer results
+
+Tool Selection Rules for Web Tools
+
+Use web-search when: the question concerns regulatory guidance (FDA, EMA, ICH), recent news, press releases, industry announcements, or policy — and no peer-reviewed evidence is expected to address it
+Use web-fetch when: a specific URL is known and content retrieval from that exact source is needed
+Neither tool is used by default — both require explicit selection by the LLM query parser
+web-fetch is URL-only and is never used for keyword-based queries
 
 
 9.4 Professional Communication MCP Tool (M365 Email)

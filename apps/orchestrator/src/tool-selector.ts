@@ -9,7 +9,7 @@
  * Per Spec 10.1: tool selection must be inspectable and explainable.
  */
 
-export type ToolName = "pubmed-search" | "clinicaltrials-search" | "web-fetch";
+export type ToolName = "pubmed-search" | "clinicaltrials-search" | "web-fetch" | "web-search";
 
 export interface SelectedTool {
   /** MCP tool name to invoke */

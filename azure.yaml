@@ -1,0 +1,20 @@
+# Azure Developer CLI (azd) project manifest
+# Run `azd up` to provision infrastructure and deploy all services.
+# Prerequisites: Azure CLI, Azure Developer CLI, Docker Desktop
+
+name: research-agent-mcp
+
+services:
+  orchestrator:
+    language: js
+    host: containerapp
+    project: apps/orchestrator
+    docker:
+      path: ../../Dockerfile
+      context: ../..
+
+  frontend:
+    language: js
+    host: staticwebapp
+    project: apps/frontend
+    dist: dist

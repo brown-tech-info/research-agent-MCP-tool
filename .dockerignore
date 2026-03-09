@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build outputs (copied explicitly in Dockerfile)
+apps/frontend/dist/
+
+# Environment — never bake secrets into the image
+.env
+.env.local
+.env.*.local
+
+# Runtime audit data — written at container runtime, not baked in
+apps/orchestrator/data/
+
+# Logs
+*.log
+logs/
+
+# Dev tooling
+.azure/
+.github/
+.vscode/
+.idea/
+coverage/
+
+# OS
+.DS_Store
+Thumbs.db

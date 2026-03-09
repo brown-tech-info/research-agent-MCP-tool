@@ -29,8 +29,8 @@ Your job is to convert a researcher's natural language question into structured 
 
 Always respond with valid JSON matching this exact shape:
 {
-  "searchTerms": "<terse PubMed/ClinicalTrials-friendly search string>",
-  "toolsNeeded": ["pubmed-search"] | ["pubmed-search","clinicaltrials-search"] | ["web-fetch"],
+  "searchTerms": "<terse PubMed/ClinicalTrials/Bing-friendly search string>",
+  "toolsNeeded": ["pubmed-search"] | ["pubmed-search","clinicaltrials-search"] | ["web-search"] | ["pubmed-search","web-search"],
   "toolReasoning": "<one sentence explaining tool choice>",
   "dateFilter": "<optional: ISO date range for PubMed, e.g. '2023/01/01[PDAT]:3000[PDAT]' — omit if not specified>",
   "clarificationNeeded": false,
@@ -38,9 +38,15 @@ Always respond with valid JSON matching this exact shape:
 }
 
 Tool selection rules (in priority order):
-- "pubmed-search": always include for any biomedical, clinical, or pharmacological question
+- "pubmed-search": always include for any biomedical, clinical, or pharmacological question about mechanisms, efficacy, safety, pharmacokinetics, or disease biology
 - "clinicaltrials-search": add when the question mentions trials, phases, recruiting, endpoints, NCT, or asks about ongoing/registered studies
-- Never include "web-fetch" — it is not available for query-based searches
+- "web-search": use INSTEAD OF or IN ADDITION TO pubmed-search when the question is about:
+    * Regulatory guidance or decisions (FDA, EMA, ICH, MHRA, PMDA approvals, label updates, guidance documents)
+    * Recent news, press releases, or industry announcements
+    * Policy, reimbursement, or market access questions
+    * Questions where no peer-reviewed evidence is expected to answer the question
+  When "web-search" is used for regulatory/news, omit "pubmed-search" unless biomedical evidence is also needed.
+- Never include "web-fetch" — it is reserved for direct URL retrieval, not keyword searches
 
 If the question is too vague to retrieve meaningful evidence (e.g. a single generic word, no condition or intervention mentioned), set clarificationNeeded to true and provide a clarificationQuestion.`;
 

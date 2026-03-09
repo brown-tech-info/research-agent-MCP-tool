@@ -14,7 +14,7 @@ import { MetricsCollector } from "./metrics";
 import { ClarificationNeeded } from "./types";
 import { PubMedSearchTool } from "@research-agent/pubmed-mcp";
 import { ClinicalTrialsSearchTool } from "@research-agent/clinicaltrials-mcp";
-import { WebFetchTool } from "@research-agent/web-mcp";
+import { WebFetchTool, WebSearchTool } from "@research-agent/web-mcp";
 import { DraftMailTool } from "@research-agent/m365-mail-mcp";
 import { createMemoryTools } from "@research-agent/memory-mcp";
 import type { Citation } from "@research-agent/memory-mcp";
@@ -42,6 +42,7 @@ const mcpClient = new MCPClient();
 mcpClient.registerTool(new PubMedSearchTool());
 mcpClient.registerTool(new ClinicalTrialsSearchTool());
 mcpClient.registerTool(new WebFetchTool());
+mcpClient.registerTool(new WebSearchTool());
 
 const orchestrator = new Orchestrator(mcpClient, auditRecorder, llmClient);
 
@@ -54,7 +55,7 @@ const app = express();
 app.use(express.json());
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: process.env.CORS_ORIGIN ?? "http://localhost:5173",
   })
 );
 
@@ -195,6 +196,8 @@ app.post("/api/research/stream", async (req: Request, res: Response) => {
 
       if (toolName === "clinicaltrials-search") {
         inputs = { query: parsed.searchTerms.slice(0, 200), maxResults: 10 };
+      } else if (toolName === "web-search") {
+        inputs = { query: parsed.searchTerms, maxResults: 5 };
       } else if (toolName === "web-fetch") {
         logger.info("tool_skipped", { toolName, reason: "web-fetch requires a URL, not a search query" });
         continue;

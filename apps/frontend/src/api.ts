@@ -1,5 +1,9 @@
 import type { ApiResponse, AuditRecord, MemoryEntry, Citation } from './types';
 
+// In production with Azure Static Web Apps, API calls use the SWA proxy (relative URLs).
+// Set VITE_API_BASE_URL to override for non-proxy scenarios (e.g. direct Container App URL).
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '';
+
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
@@ -18,7 +22,7 @@ export async function submitResearchQuery(
   context?: string,
   history?: ConversationTurn[],
 ): Promise<ApiResponse> {
-  const res = await fetch('/api/research', {
+  const res = await fetch(`${API_BASE}/api/research`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ question, context, history }),
@@ -49,7 +53,7 @@ export function submitResearchQueryStream(
   (async () => {
     let res: Response;
     try {
-      res = await fetch('/api/research/stream', {
+      res = await fetch(`${API_BASE}/api/research/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question, context, history }),
@@ -117,12 +121,12 @@ export function submitResearchQueryStream(
 }
 
 export async function getAuditRecord(interactionId: string): Promise<AuditRecord> {
-  const res = await fetch(`/api/audit/${encodeURIComponent(interactionId)}`);
+  const res = await fetch(`${API_BASE}/api/audit/${encodeURIComponent(interactionId)}`);
   return handleResponse<AuditRecord>(res);
 }
 
 export async function listMemory(): Promise<{ entries: MemoryEntry[]; count: number }> {
-  const res = await fetch('/api/memory');
+  const res = await fetch(`${API_BASE}/api/memory`);
   return handleResponse<{ entries: MemoryEntry[]; count: number }>(res);
 }
 
@@ -131,7 +135,7 @@ export async function saveMemory(
   content: string,
   citations?: Citation[],
 ): Promise<{ entry: MemoryEntry }> {
-  const res = await fetch('/api/memory', {
+  const res = await fetch(`${API_BASE}/api/memory`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ title, content, citations }),
@@ -145,7 +149,7 @@ export async function createMailDraft(
   body: string,
   citations?: Citation[],
 ): Promise<{ draft: import('./types').MailDraft }> {
-  const res = await fetch('/api/mail/draft', {
+  const res = await fetch(`${API_BASE}/api/mail/draft`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ to, subject, body, citations }),
@@ -154,6 +158,6 @@ export async function createMailDraft(
 }
 
 export async function deleteMemory(id: string): Promise<{ deleted: boolean; id: string }> {
-  const res = await fetch(`/api/memory/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  const res = await fetch(`${API_BASE}/api/memory/${encodeURIComponent(id)}`, { method: 'DELETE' });
   return handleResponse<{ deleted: boolean; id: string }>(res);
 }

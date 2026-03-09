@@ -81,6 +81,8 @@ export class Orchestrator {
           // Truncate searchTerms to avoid CT API 400s from overly long queries
           const safeQuery = parsed.searchTerms.slice(0, 200);
           inputs = { query: safeQuery, maxResults: 10 };
+        } else if (toolName === "web-search") {
+          inputs = { query: parsed.searchTerms, maxResults: 5 };
         } else if (toolName === "web-fetch") {
           // web-fetch requires a specific URL — skip if we only have a query
           logger.info("tool_skipped", { toolName, reason: "web-fetch requires a URL, not a search query" });

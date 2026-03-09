@@ -1,5 +1,7 @@
 # Pharmaceutical Research Assistant Agent
 
+[![CI](https://github.com/brown-tech-info/research-agent-MCP-tool/actions/workflows/ci.yml/badge.svg)](https://github.com/brown-tech-info/research-agent-MCP-tool/actions/workflows/ci.yml)
+
 ## Purpose
 
 This is a **research assistant agent** designed for technical and scientific researchers in pharmaceutical companies. The agent accelerates evidence discovery, synthesis, and communication while maintaining scientific rigor and regulatory compliance.
@@ -136,7 +138,7 @@ Open **http://localhost:5173**.
 npm test
 ```
 
-Runs all 88 tests across MCP contract tests and orchestrator integration tests.
+Runs all 103 tests across MCP contract tests and orchestrator integration tests.
 
 ## Using the Agent
 
@@ -177,6 +179,76 @@ The **Tool Trace** panel shows every MCP tool invoked, its inputs, outputs, and 
 ### Research memory
 
 The **Memory** panel lets you save, inspect, and delete research notes. Saved notes preserve citations. Nothing is saved automatically — all memory is explicitly user-controlled.
+
+## Deploy to Azure
+
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com)
+
+This project is ready for one-command Azure deployment using the **Azure Developer CLI** (`azd`).
+
+### Architecture in Azure
+
+```
+User
+  ↓
+Azure Static Web Apps (React frontend)
+  ↓  /api/* proxy
+Azure Container Apps (Express orchestrator, port 3001, scales to zero)
+  ├── Azure OpenAI (your existing resource)
+  ├── Bing Search API (Azure Cognitive Services)
+  └── Application Insights + Log Analytics
+```
+
+### Prerequisites
+
+- [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
+- [Azure Developer CLI (`azd`)](https://aka.ms/azd-install)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (running)
+- An Azure subscription
+- An existing **Azure OpenAI** resource with a `gpt-4o` deployment
+- A **Bing Search v7** resource (Azure Cognitive Services → Bing Search v7)
+
+### Deploy
+
+```bash
+# 1. Authenticate
+azd auth login
+
+# 2. Create a new environment (e.g. "research-agent-prod")
+azd env new research-agent-prod
+
+# 3. Set required environment variables (never committed to source)
+azd env set AZURE_OPENAI_ENDPOINT  https://<your-resource>.cognitiveservices.azure.com/
+azd env set AZURE_OPENAI_KEY       <your-openai-api-key>
+azd env set AZURE_OPENAI_DEPLOYMENT gpt-4o
+azd env set AZURE_OPENAI_API_VERSION 2024-10-01-preview
+azd env set BING_SEARCH_API_KEY    <your-bing-search-api-key>
+
+# 4. Provision infrastructure and deploy both services
+azd up
+```
+
+`azd up` will:
+1. Provision all Azure resources (Container Apps environment, Container App, Container Registry, Static Web App, Application Insights)
+2. Build and push the orchestrator Docker image to ACR
+3. Build the React frontend and deploy to Static Web Apps
+4. Wire the SWA URL into the Container App's `CORS_ORIGIN` environment variable
+
+After deployment, `azd` prints the frontend URL. Open it to use the agent.
+
+### Subsequent deployments
+
+```bash
+# Redeploy after code changes
+azd deploy
+```
+
+### Tear down
+
+```bash
+# Remove all Azure resources
+azd down
+```
 
 ## API Reference
 
@@ -229,12 +301,15 @@ All substantive research responses follow this structure (Spec §11.2):
 | T9.5 | Web research tool correctly routed in LLM path | ✅ |
 | T9.6 | Multi-turn conversation history — follow-up questions inherit context | ✅ |
 | T9.7 | Streaming LLM responses via SSE — tokens visible as synthesis happens | ✅ |
+| T9.8 | GitHub Actions CI — automated test runs on push/PR, CI badge in README | ✅ |
+| T9.9 | `web-search` tool via Bing Search API for regulatory/news open-ended queries | ✅ |
 | — | Email draft from chat — natural language intent → draft review card | ✅ |
+| — | Azure deployment — `azd up` provisions Container Apps + Static Web Apps | ✅ |
 
 ### Known limitations
 
 - **Email sending**: Draft-only by design. M365 Graph API / OAuth not integrated.
-- **Web research**: The `web-fetch` tool requires a direct URL; open-ended web search queries are skipped with a logged notice.
+- **Web search**: Requires `BING_SEARCH_API_KEY`. Without it, open-ended regulatory/news queries fall back to PubMed only.
 - **Memory persistence**: In-memory within a single server process; no database backing.
 
 ## Contributing
