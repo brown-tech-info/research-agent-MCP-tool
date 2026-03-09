@@ -1,12 +1,8 @@
-import { DefaultAzureCredential } from "@azure/identity";
-import type { TokenCredential } from "@azure/identity";
 import type { MCPTool, WebSearchInputs, WebSearchResult, WebSearchResultItem } from "./types.js";
 
 const DEFAULT_MAX_RESULTS = 5;
 const MAX_ALLOWED_RESULTS = 10;
 const BING_SEARCH_ENDPOINT = "https://api.bing.microsoft.com/v7.0/search";
-/** AAD resource scope for Bing Search API */
-const BING_TOKEN_SCOPE = "https://api.bing.microsoft.com/.default";
 
 interface BingWebPage {
   url: string;
@@ -24,14 +20,21 @@ interface BingSearchResponse {
 
 export class WebSearchTool implements MCPTool {
   readonly name = "web-search";
-  private credential: TokenCredential;
+  private apiKey: string;
 
   /**
-   * @param credential Optional TokenCredential — defaults to DefaultAzureCredential.
-   *   Pass a mock credential in tests to avoid real Azure token acquisition.
+   * @param apiKey Optional API key override — useful for tests.
+   *   Defaults to BING_SEARCH_API_KEY environment variable.
    */
-  constructor(credential?: TokenCredential) {
-    this.credential = credential ?? new DefaultAzureCredential();
+  constructor(apiKey?: string) {
+    const key = apiKey ?? process.env.BING_SEARCH_API_KEY;
+    if (!key) {
+      throw new Error(
+        "WebSearchTool: BING_SEARCH_API_KEY environment variable is required. " +
+        "Set it in your .env file."
+      );
+    }
+    this.apiKey = key;
   }
 
   async execute(inputs: Record<string, unknown>): Promise<WebSearchResult> {
@@ -46,19 +49,6 @@ export class WebSearchTool implements MCPTool {
       MAX_ALLOWED_RESULTS
     );
 
-    // Acquire bearer token via DefaultAzureCredential (az login locally, Managed Identity in Azure)
-    let token: string;
-    try {
-      const tokenResult = await this.credential.getToken(BING_TOKEN_SCOPE);
-      if (!tokenResult?.token) {
-        throw new Error("Token acquisition returned null");
-      }
-      token = tokenResult.token;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      throw new Error(`Web search failed: could not acquire Azure credential for Bing — ${message}. Run 'az login' locally.`);
-    }
-
     const searchUrl = new URL(BING_SEARCH_ENDPOINT);
     searchUrl.searchParams.set("q", query.trim());
     searchUrl.searchParams.set("count", String(count));
@@ -69,7 +59,7 @@ export class WebSearchTool implements MCPTool {
     try {
       response = await fetch(searchUrl.toString(), {
         headers: {
-          "Authorization": `Bearer ${token}`,
+          "Ocp-Apim-Subscription-Key": this.apiKey,
           "Accept": "application/json",
         },
       });

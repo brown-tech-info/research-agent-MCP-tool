@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { WebSearchTool } from "../search-tool.js";
-import type { TokenCredential } from "@azure/identity";
 
 const makeBingResponse = (pages: object[], status = 200) =>
   ({
@@ -21,27 +20,14 @@ const fakePage = (n: number) => ({
   datePublished: "2025-01-15T00:00:00Z",
 });
 
-/** Stub TokenCredential that returns a fake token — avoids real Azure auth in tests */
-const stubCredential: TokenCredential = {
-  getToken: vi.fn().mockResolvedValue({ token: "fake-test-token", expiresOnTimestamp: Date.now() + 3600000 }),
-};
-
-/** Stub TokenCredential that simulates a credential failure */
-const failingCredential: TokenCredential = {
-  getToken: vi.fn().mockRejectedValue(new Error("Azure CLI not logged in")),
-};
+const TEST_API_KEY = "test-bing-api-key-12345";
 
 describe("WebSearchTool contract (spec §9.3b)", () => {
   let tool: WebSearchTool;
 
   beforeEach(() => {
-    tool = new WebSearchTool(stubCredential);
+    tool = new WebSearchTool(TEST_API_KEY);
     vi.resetAllMocks();
-    // Re-apply the stub after reset
-    (stubCredential.getToken as ReturnType<typeof vi.fn>).mockResolvedValue({
-      token: "fake-test-token",
-      expiresOnTimestamp: Date.now() + 3600000,
-    });
   });
 
   it("returns results with correct provenance fields", async () => {
@@ -61,15 +47,15 @@ describe("WebSearchTool contract (spec §9.3b)", () => {
     expect(first.isWebSource).toBe(true);
   });
 
-  it("uses Authorization Bearer header (not API key header)", async () => {
+  it("uses Ocp-Apim-Subscription-Key header (not Bearer token)", async () => {
     const fetchMock = vi.fn().mockResolvedValue(makeBingResponse([fakePage(1)]));
     vi.stubGlobal("fetch", fetchMock);
 
     await tool.execute({ query: "FDA guidance" });
 
     const headers = (fetchMock.mock.calls[0] as [string, { headers: Record<string, string> }])[1].headers;
-    expect(headers["Authorization"]).toBe("Bearer fake-test-token");
-    expect(headers["Ocp-Apim-Subscription-Key"]).toBeUndefined();
+    expect(headers["Ocp-Apim-Subscription-Key"]).toBe(TEST_API_KEY);
+    expect(headers["Authorization"]).toBeUndefined();
   });
 
   it("isWebSource is always true — never peer-reviewed (spec §9.3b)", async () => {
@@ -121,11 +107,11 @@ describe("WebSearchTool contract (spec §9.3b)", () => {
     await expect(tool.execute({ query: "   " })).rejects.toThrow("query is required");
   });
 
-  it("throws with clear message when Azure credential cannot acquire token", async () => {
-    const failingTool = new WebSearchTool(failingCredential);
-    await expect(failingTool.execute({ query: "FDA guidelines" })).rejects.toThrow(
-      "could not acquire Azure credential for Bing"
-    );
+  it("throws when BING_SEARCH_API_KEY is not set", async () => {
+    const savedKey = process.env.BING_SEARCH_API_KEY;
+    delete process.env.BING_SEARCH_API_KEY;
+    expect(() => new WebSearchTool()).toThrow("BING_SEARCH_API_KEY environment variable is required");
+    process.env.BING_SEARCH_API_KEY = savedKey;
   });
 
   it("throws on Bing API HTTP error", async () => {
