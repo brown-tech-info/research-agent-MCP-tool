@@ -22,6 +22,12 @@ class AzureLLMClient implements LLMClient {
   private deployment: string;
 
   constructor(endpoint: string, deployment: string, apiVersion: string) {
+    // When using azureADTokenProvider, the OpenAI SDK throws if AZURE_OPENAI_API_KEY
+    // or OPENAI_API_KEY are present in the environment (even as system env vars not
+    // in .env). Remove them so the SDK uses only the token provider.
+    delete process.env.AZURE_OPENAI_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+
     const credential = new DefaultAzureCredential();
     const azureADTokenProvider = getBearerTokenProvider(
       credential,
