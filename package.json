@@ -4,8 +4,8 @@
   "private": true,
   "description": "Pharmaceutical Research Assistant Agent",
   "workspaces": [
-    "apps/*",
-    "servers/*"
+    "servers/*",
+    "apps/*"
   ],
   "scripts": {
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
