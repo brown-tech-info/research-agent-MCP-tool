@@ -1,0 +1,19 @@
+{
+  "name": "@research-agent/clinicaltrials-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ClinicalTrials.gov MCP server — clinical trial discovery",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:ci": "vitest run",
+    "lint": "eslint src --ext .ts"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.6.0"
+  }
+}

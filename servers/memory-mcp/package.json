@@ -1,0 +1,19 @@
+{
+  "name": "@research-agent/memory-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Memory MCP server — user-controlled research note storage",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:ci": "vitest run",
+    "lint": "eslint src --ext .ts"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.6.0"
+  }
+}
