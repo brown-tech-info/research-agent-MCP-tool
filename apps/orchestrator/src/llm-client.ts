@@ -1,12 +1,16 @@
 /**
  * LLM Client — Azure OpenAI wrapper
  *
- * Reads connection details from environment variables (loaded via dotenv).
- * Returns null when not configured so the orchestrator can fall back to
- * the keyword-based path without crashing.
+ * Uses DefaultAzureCredential for token-based authentication — no API key required.
+ * Locally: picks up `az login` or `azd auth login` credentials automatically.
+ * In Azure: uses the Container App's Managed Identity.
+ *
+ * Returns null when AZURE_OPENAI_ENDPOINT / DEPLOYMENT are not set so the
+ * orchestrator can fall back to the keyword-based path without crashing.
  */
 
 import { AzureOpenAI } from "openai";
+import { DefaultAzureCredential, getBearerTokenProvider } from "@azure/identity";
 
 export interface LLMClient {
   chat(systemPrompt: string, userMessage: string): Promise<string>;
@@ -17,8 +21,13 @@ class AzureLLMClient implements LLMClient {
   private client: AzureOpenAI;
   private deployment: string;
 
-  constructor(endpoint: string, apiKey: string, deployment: string) {
-    this.client = new AzureOpenAI({ endpoint, apiKey, apiVersion: "2024-10-01-preview" });
+  constructor(endpoint: string, deployment: string, apiVersion: string) {
+    const credential = new DefaultAzureCredential();
+    const azureADTokenProvider = getBearerTokenProvider(
+      credential,
+      "https://cognitiveservices.azure.com/.default"
+    );
+    this.client = new AzureOpenAI({ endpoint, azureADTokenProvider, apiVersion });
     this.deployment = deployment;
   }
 
@@ -54,19 +63,21 @@ class AzureLLMClient implements LLMClient {
     }
   }
 }
+
 /**
- * Returns a configured LLMClient, or null if env vars are not set.
- * The orchestrator uses null to trigger the keyword-based fallback.
+ * Returns a configured LLMClient using DefaultAzureCredential, or null if
+ * AZURE_OPENAI_ENDPOINT / DEPLOYMENT are not configured (triggers keyword fallback).
+ * AZURE_OPENAI_KEY is no longer required — authentication uses az login / Managed Identity.
  */
 export function createLLMClient(): LLMClient | null {
   const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
-  const apiKey = process.env.AZURE_OPENAI_KEY;
   const deployment = process.env.AZURE_OPENAI_DEPLOYMENT;
+  const apiVersion = process.env.AZURE_OPENAI_API_VERSION ?? "2024-10-01-preview";
 
-  if (!endpoint || !apiKey || !deployment ||
-      endpoint.includes("your-resource") || apiKey === "your-api-key-here") {
+  if (!endpoint || endpoint.includes("your-resource") ||
+      !deployment || deployment.includes("your-")) {
     return null;
   }
 
-  return new AzureLLMClient(endpoint, apiKey, deployment);
+  return new AzureLLMClient(endpoint, deployment, apiVersion);
 }

@@ -11,17 +11,14 @@
     "azureOpenAiEndpoint": {
       "value": "${AZURE_OPENAI_ENDPOINT}"
     },
-    "azureOpenAiKey": {
-      "value": "${AZURE_OPENAI_KEY}"
-    },
     "azureOpenAiDeployment": {
       "value": "${AZURE_OPENAI_DEPLOYMENT}"
     },
     "azureOpenAiApiVersion": {
       "value": "${AZURE_OPENAI_API_VERSION}"
     },
-    "bingSearchApiKey": {
-      "value": "${BING_SEARCH_API_KEY}"
+    "azureOpenAiResourceId": {
+      "value": "${AZURE_OPENAI_RESOURCE_ID}"
     }
   }
 }

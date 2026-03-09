@@ -12,19 +12,14 @@ param location string = 'eastus'
 @description('Azure OpenAI endpoint URL (e.g. https://your-resource.cognitiveservices.azure.com/)')
 param azureOpenAiEndpoint string
 
-@secure()
-@description('Azure OpenAI API key')
-param azureOpenAiKey string
-
 @description('Azure OpenAI deployment name (e.g. gpt-4o)')
 param azureOpenAiDeployment string = 'gpt-4o'
 
 @description('Azure OpenAI API version')
 param azureOpenAiApiVersion string = '2024-10-01-preview'
 
-@secure()
-@description('Bing Search API key (Azure Cognitive Services)')
-param bingSearchApiKey string
+@description('Resource ID of the Azure OpenAI resource (for RBAC role assignment)')
+param azureOpenAiResourceId string = ''
 
 // ---------------------------------------------------------------------------
 // Derived names
@@ -33,6 +28,9 @@ param bingSearchApiKey string
 var abbrs = loadJsonContent('./abbreviations.json')
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
 var tags = { 'azd-env-name': environmentName }
+
+// Cognitive Services OpenAI User role — grants token-based access to Azure OpenAI
+var cognitiveServicesOpenAiUserRoleId = '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
 
 // ---------------------------------------------------------------------------
 // Resource group
@@ -74,7 +72,21 @@ module registry './modules/container-registry.bicep' = {
 }
 
 // ---------------------------------------------------------------------------
-// Container Apps
+// Static Web App (frontend) — provisioned before Container Apps so we have the URL for CORS
+// ---------------------------------------------------------------------------
+
+module staticWebApp './modules/static-web-app.bicep' = {
+  name: 'static-web-app'
+  scope: rg
+  params: {
+    location: location
+    tags: tags
+    name: '${abbrs.webStaticSites}${resourceToken}'
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Container Apps (orchestrator) — CORS wired to SWA URL in one pass
 // ---------------------------------------------------------------------------
 
 module containerApps './modules/container-apps.bicep' = {
@@ -89,50 +101,25 @@ module containerApps './modules/container-apps.bicep' = {
     logAnalyticsWorkspaceId: monitoring.outputs.logAnalyticsWorkspaceId
     applicationInsightsConnectionString: monitoring.outputs.applicationInsightsConnectionString
     azureOpenAiEndpoint: azureOpenAiEndpoint
-    azureOpenAiKey: azureOpenAiKey
     azureOpenAiDeployment: azureOpenAiDeployment
     azureOpenAiApiVersion: azureOpenAiApiVersion
-    bingSearchApiKey: bingSearchApiKey
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Static Web App (frontend)
-// ---------------------------------------------------------------------------
-
-module staticWebApp './modules/static-web-app.bicep' = {
-  name: 'static-web-app'
-  scope: rg
-  params: {
-    location: location
-    tags: tags
-    name: '${abbrs.webStaticSites}${resourceToken}'
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Update CORS — pass SWA URL to Container App after SWA is provisioned
-// ---------------------------------------------------------------------------
-
-module containerAppCors './modules/container-apps.bicep' = {
-  name: 'container-apps-cors'
-  scope: rg
-  params: {
-    location: location
-    tags: tags
-    containerAppsEnvironmentName: '${abbrs.appManagedEnvironments}${resourceToken}'
-    containerAppName: '${abbrs.appContainerApps}${resourceToken}'
-    containerRegistryName: registry.outputs.name
-    logAnalyticsWorkspaceId: monitoring.outputs.logAnalyticsWorkspaceId
-    applicationInsightsConnectionString: monitoring.outputs.applicationInsightsConnectionString
-    azureOpenAiEndpoint: azureOpenAiEndpoint
-    azureOpenAiKey: azureOpenAiKey
-    azureOpenAiDeployment: azureOpenAiDeployment
-    azureOpenAiApiVersion: azureOpenAiApiVersion
-    bingSearchApiKey: bingSearchApiKey
     corsOrigin: 'https://${staticWebApp.outputs.defaultHostname}'
   }
-  dependsOn: [containerApps]
+}
+
+// ---------------------------------------------------------------------------
+// RBAC — grant Container App managed identity access to Azure OpenAI
+// Only assigned when azureOpenAiResourceId is provided
+// ---------------------------------------------------------------------------
+
+module openAiRoleAssignment './modules/role-assignment.bicep' = if (!empty(azureOpenAiResourceId)) {
+  name: 'openai-role-assignment'
+  scope: rg
+  params: {
+    principalId: containerApps.outputs.containerAppPrincipalId
+    roleDefinitionId: cognitiveServicesOpenAiUserRoleId
+    resourceId: azureOpenAiResourceId
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -147,4 +134,6 @@ output AZURE_CONTAINER_REGISTRY_NAME string = registry.outputs.name
 output SERVICE_ORCHESTRATOR_URI string = containerApps.outputs.containerAppUri
 output SERVICE_FRONTEND_STATIC_WEB_APP_NAME string = staticWebApp.outputs.name
 output SERVICE_FRONTEND_URI string = 'https://${staticWebApp.outputs.defaultHostname}'
+output APPLICATIONINSIGHTS_CONNECTION_STRING string = monitoring.outputs.applicationInsightsConnectionString
+output CONTAINER_APP_PRINCIPAL_ID string = containerApps.outputs.containerAppPrincipalId
 output APPLICATIONINSIGHTS_CONNECTION_STRING string = monitoring.outputs.applicationInsightsConnectionString

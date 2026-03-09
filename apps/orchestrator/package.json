@@ -17,19 +17,20 @@
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
-    "express": "^4.18.0",
-    "cors": "^2.8.5",
-    "openai": "^4.0.0",
-    "dotenv": "^16.0.0",
-    "@research-agent/pubmed-mcp": "*",
+    "@azure/identity": "^4.13.0",
     "@research-agent/clinicaltrials-mcp": "*",
-    "@research-agent/web-mcp": "*",
     "@research-agent/m365-mail-mcp": "*",
-    "@research-agent/memory-mcp": "*"
+    "@research-agent/memory-mcp": "*",
+    "@research-agent/pubmed-mcp": "*",
+    "@research-agent/web-mcp": "*",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.0",
+    "express": "^4.18.0",
+    "openai": "^4.0.0"
   },
   "devDependencies": {
-    "@types/express": "^4.17.0",
     "@types/cors": "^2.8.0",
+    "@types/express": "^4.17.0",
     "@types/node": "^18.0.0",
     "typescript": "^5.0.0",
     "vitest": "^1.6.0"

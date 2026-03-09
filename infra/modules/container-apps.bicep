@@ -7,12 +7,8 @@ param logAnalyticsWorkspaceId string
 param applicationInsightsConnectionString string
 
 param azureOpenAiEndpoint string
-@secure()
-param azureOpenAiKey string
 param azureOpenAiDeployment string
 param azureOpenAiApiVersion string
-@secure()
-param bingSearchApiKey string
 
 @description('Allowed CORS origin for the frontend (e.g. https://stapp-xxxxx.azurestaticapps.net)')
 param corsOrigin string = 'http://localhost:5173'
@@ -39,6 +35,10 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
   name: containerAppName
   location: location
   tags: union(tags, { 'azd-service-name': 'orchestrator' })
+  // System-assigned managed identity — used for DefaultAzureCredential in the app
+  identity: {
+    type: 'SystemAssigned'
+  }
   properties: {
     managedEnvironmentId: environment.id
     configuration: {
@@ -71,14 +71,6 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
             '2023-01-01-preview'
           ).passwords[0].value
         }
-        {
-          name: 'azure-openai-key'
-          value: azureOpenAiKey
-        }
-        {
-          name: 'bing-search-api-key'
-          value: bingSearchApiKey
-        }
       ]
     }
     template: {
@@ -104,20 +96,12 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
               value: azureOpenAiEndpoint
             }
             {
-              name: 'AZURE_OPENAI_KEY'
-              secretRef: 'azure-openai-key'
-            }
-            {
               name: 'AZURE_OPENAI_DEPLOYMENT'
               value: azureOpenAiDeployment
             }
             {
               name: 'AZURE_OPENAI_API_VERSION'
               value: azureOpenAiApiVersion
-            }
-            {
-              name: 'BING_SEARCH_API_KEY'
-              secretRef: 'bing-search-api-key'
             }
             {
               name: 'CORS_ORIGIN'
@@ -150,3 +134,4 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
 
 output containerAppUri string = 'https://${containerApp.properties.configuration.ingress.fqdn}'
 output containerAppName string = containerApp.name
+output containerAppPrincipalId string = containerApp.identity.principalId

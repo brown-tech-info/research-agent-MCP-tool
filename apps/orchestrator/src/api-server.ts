@@ -369,13 +369,12 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3001;
 
 // --- T9.2: Startup environment validation ---
 function validateEnv(): void {
+  // Only ENDPOINT and DEPLOYMENT are required — KEY is not needed with DefaultAzureCredential
   const required = [
     "AZURE_OPENAI_ENDPOINT",
-    "AZURE_OPENAI_KEY",
     "AZURE_OPENAI_DEPLOYMENT",
-    "AZURE_OPENAI_API_VERSION",
   ];
-  const placeholders = ["<your-resource>", "<your-api-key>", "your-", "placeholder"];
+  const placeholders = ["<your-resource>", "your-", "placeholder"];
 
   if (llmClient) {
     const missing = required.filter((k) => !process.env[k]);
@@ -385,11 +384,11 @@ function validateEnv(): void {
     });
 
     if (missing.length > 0) {
-      logger.error("env_validation_failed", { missing, hint: "Copy apps/orchestrator/.env.example to .env and fill in values" });
+      logger.error("env_validation_failed", { missing, hint: "Set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_DEPLOYMENT. No API key needed — run 'az login' for local auth." });
       process.exit(1);
     }
     if (placeholder.length > 0) {
-      logger.error("env_validation_failed", { placeholder, hint: "Replace placeholder values in .env with real Azure credentials" });
+      logger.error("env_validation_failed", { placeholder, hint: "Replace placeholder values in .env with real Azure resource details." });
       process.exit(1);
     }
   }
