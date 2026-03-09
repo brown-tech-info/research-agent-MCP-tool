@@ -77,7 +77,10 @@ export async function synthesizeWithLLM(
   const userMessage = buildSynthesisUserMessage(question, parsedQuery, toolResults, history);
 
   const raw = await llm.chat(SYSTEM_PROMPT, userMessage);
-  const json = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
+  // Extract the JSON object regardless of markdown fences or trailing whitespace.
+  // GPT-4o sometimes wraps output in ```json ... ``` even when instructed not to.
+  const match = raw.match(/\{[\s\S]*\}/);
+  const json = match ? match[0].trim() : raw.trim();
 
   let parsed: ResearchResponse;
   try {

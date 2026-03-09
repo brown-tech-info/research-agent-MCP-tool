@@ -63,8 +63,9 @@ export async function parseQuery(
 
   const raw = await llm.chat(SYSTEM_PROMPT, question + historyContext);
 
-  // Strip markdown code fences if the model wraps output
-  const json = raw.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
+  // Extract JSON object regardless of markdown fences — GPT-4o sometimes adds ```json ... ```
+  const match = raw.match(/\{[\s\S]*\}/);
+  const json = match ? match[0].trim() : raw.trim();
 
   let parsed: ParsedQuery;
   try {
