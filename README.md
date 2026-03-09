@@ -195,7 +195,7 @@ Azure Static Web Apps (React frontend)
   ↓  /api/* proxy
 Azure Container Apps (Express orchestrator, port 3001, scales to zero)
   ├── Azure OpenAI (your existing resource)
-  ├── Bing Search API (Azure Cognitive Services)
+  ├── Tavily Search API
   └── Application Insights + Log Analytics
 ```
 
@@ -206,7 +206,7 @@ Azure Container Apps (Express orchestrator, port 3001, scales to zero)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (running)
 - An Azure subscription
 - An existing **Azure OpenAI** resource with a `gpt-4o` deployment
-- A **Bing Search v7** resource (Azure Cognitive Services → Bing Search v7)
+- A free **Tavily** account for web search — sign up at [app.tavily.com](https://app.tavily.com) (1,000 searches/month, no credit card required)
 
 ### Deploy
 
@@ -222,7 +222,7 @@ azd env set AZURE_OPENAI_ENDPOINT  https://<your-resource>.cognitiveservices.azu
 azd env set AZURE_OPENAI_KEY       <your-openai-api-key>
 azd env set AZURE_OPENAI_DEPLOYMENT gpt-4o
 azd env set AZURE_OPENAI_API_VERSION 2024-10-01-preview
-azd env set BING_SEARCH_API_KEY    <your-bing-search-api-key>
+azd env set TAVILY_API_KEY          <your-tavily-api-key>
 
 # 4. Provision infrastructure and deploy both services
 azd up
@@ -302,14 +302,14 @@ All substantive research responses follow this structure (Spec §11.2):
 | T9.6 | Multi-turn conversation history — follow-up questions inherit context | ✅ |
 | T9.7 | Streaming LLM responses via SSE — tokens visible as synthesis happens | ✅ |
 | T9.8 | GitHub Actions CI — automated test runs on push/PR, CI badge in README | ✅ |
-| T9.9 | `web-search` tool via Bing Search API for regulatory/news open-ended queries | ✅ |
+| T9.9 | `web-search` tool via Tavily Search API for regulatory/news open-ended queries | ✅ |
 | — | Email draft from chat — natural language intent → draft review card | ✅ |
 | — | Azure deployment — `azd up` provisions Container Apps + Static Web Apps | ✅ |
 
 ### Known limitations
 
 - **Email sending**: Draft-only by design. M365 Graph API / OAuth not integrated.
-- **Web search**: Requires `BING_SEARCH_API_KEY`. Without it, open-ended regulatory/news queries fall back to PubMed only.
+- **Web search**: Requires `TAVILY_API_KEY`. Without it, open-ended regulatory/news queries fall back to PubMed only.
 - **Memory persistence**: In-memory within a single server process; no database backing.
 
 ## Contributing

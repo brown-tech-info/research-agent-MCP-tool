@@ -2,20 +2,17 @@ import type { MCPTool, WebSearchInputs, WebSearchResult, WebSearchResultItem } f
 
 const DEFAULT_MAX_RESULTS = 5;
 const MAX_ALLOWED_RESULTS = 10;
-const BING_SEARCH_ENDPOINT = "https://api.bing.microsoft.com/v7.0/search";
+const TAVILY_SEARCH_ENDPOINT = "https://api.tavily.com/search";
 
-interface BingWebPage {
+interface TavilyResult {
   url: string;
-  name: string;
-  snippet: string;
-  datePublished?: string;
+  title: string;
+  content?: string;
+  score?: number;
 }
 
-interface BingSearchResponse {
-  webPages?: {
-    totalEstimatedMatches?: number;
-    value?: BingWebPage[];
-  };
+interface TavilySearchResponse {
+  results?: TavilyResult[];
 }
 
 export class WebSearchTool implements MCPTool {
@@ -24,14 +21,15 @@ export class WebSearchTool implements MCPTool {
 
   /**
    * @param apiKey Optional API key override — useful for tests.
-   *   Defaults to BING_SEARCH_API_KEY environment variable.
+   *   Defaults to TAVILY_API_KEY environment variable.
+   *   Get a free key (1,000 searches/month) at https://app.tavily.com/
    */
   constructor(apiKey?: string) {
-    const key = apiKey ?? process.env.BING_SEARCH_API_KEY;
+    const key = apiKey ?? process.env.TAVILY_API_KEY;
     if (!key) {
       throw new Error(
-        "WebSearchTool: BING_SEARCH_API_KEY environment variable is required. " +
-        "Set it in your .env file."
+        "WebSearchTool: TAVILY_API_KEY environment variable is required. " +
+        "Get a free key at https://app.tavily.com/ and set it in your .env file."
       );
     }
     this.apiKey = key;
@@ -49,19 +47,19 @@ export class WebSearchTool implements MCPTool {
       MAX_ALLOWED_RESULTS
     );
 
-    const searchUrl = new URL(BING_SEARCH_ENDPOINT);
-    searchUrl.searchParams.set("q", query.trim());
-    searchUrl.searchParams.set("count", String(count));
-    searchUrl.searchParams.set("mkt", "en-US");
-    searchUrl.searchParams.set("safeSearch", "Moderate");
-
     let response: Response;
     try {
-      response = await fetch(searchUrl.toString(), {
+      response = await fetch(TAVILY_SEARCH_ENDPOINT, {
+        method: "POST",
         headers: {
-          "Ocp-Apim-Subscription-Key": this.apiKey,
-          "Accept": "application/json",
+          "Authorization": `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          query: query.trim(),
+          max_results: count,
+          search_depth: "basic",
+        }),
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -69,17 +67,16 @@ export class WebSearchTool implements MCPTool {
     }
 
     if (!response.ok) {
-      throw new Error(`Web search failed: Bing API returned HTTP ${response.status}`);
+      throw new Error(`Web search failed: Tavily API returned HTTP ${response.status}`);
     }
 
-    const body = (await response.json()) as BingSearchResponse;
-    const pages = body.webPages?.value ?? [];
+    const body = (await response.json()) as TavilySearchResponse;
+    const items = body.results ?? [];
 
-    const results: WebSearchResultItem[] = pages.map((page) => ({
-      url: page.url,
-      title: page.name,
-      snippet: page.snippet,
-      publishedDate: page.datePublished,
+    const results: WebSearchResultItem[] = items.map((item) => ({
+      url: item.url,
+      title: item.title,
+      snippet: item.content ?? "",
       isWebSource: true as const,
     }));
 

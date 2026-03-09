@@ -235,7 +235,9 @@ app.post("/api/research/stream", async (req: Request, res: Response) => {
     }
 
     // Parse the complete JSON response
-    const jsonText = fullText.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "").trim();
+    // Extract JSON object regardless of markdown fences — GPT-4o sometimes wraps output in ```json...```
+    const match = fullText.match(/\{[\s\S]*\}/);
+    const jsonText = match ? match[0].trim() : fullText.trim();
     let synthesisResult: import("./types").ResearchResponse;
     try {
       synthesisResult = JSON.parse(jsonText) as import("./types").ResearchResponse;
