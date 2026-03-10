@@ -256,6 +256,8 @@ azd env set TAVILY_API_KEY            <your-tavily-api-key>
 # azd env set AZURE_OPENAI_RESOURCE_ID /subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.CognitiveServices/accounts/<name>
 
 # 5. Provision infrastructure and deploy everything
+#    ⚠️  Make sure Docker Desktop is running before this step
+#    (check the whale icon in your system tray)
 azd up
 ```
 
