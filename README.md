@@ -212,8 +212,8 @@ This project is ready for one-command Azure deployment using the **Azure Develop
 User
   ↓
 Azure Static Web Apps (React frontend)
-  ↓  /api/* proxy
-Azure Container Apps (Express orchestrator, port 3001, scales to zero)
+  ↓  /api/* proxy (SWA linked backend)
+Azure Container Apps (Express orchestrator, port 3001, always-on)
   ├── Azure OpenAI (your existing resource, Managed Identity auth)
   ├── Azure Cosmos DB (serverless, research memory, Managed Identity auth)
   ├── Tavily Search API (web/regulatory queries)
@@ -222,34 +222,40 @@ Azure Container Apps (Express orchestrator, port 3001, scales to zero)
 
 ### Prerequisites
 
+Install these tools before you begin (one-time setup):
+
 - [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
 - [Azure Developer CLI (`azd`)](https://aka.ms/azd-install)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (running)
-- An Azure subscription
-- An existing **Azure OpenAI** resource with a `gpt-4o` deployment
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) — must be **running** when you run `azd up`
+- [Node.js 20+](https://nodejs.org/)
+- An Azure subscription with an existing **Azure OpenAI** resource and a `gpt-4o` deployment
 - A free **Tavily** account for web search — sign up at [app.tavily.com](https://app.tavily.com) (1,000 searches/month, no credit card required)
 
 ### Deploy
 
-```bash
-# 1. Authenticate
-azd auth login
+Run all commands from the **repo root directory**:
 
-# 2. Create a new environment (e.g. "research-agent-prod")
+```bash
+# 1. Authenticate with Azure (one command covers both az and azd)
+az login
+
+# 2. Clone the repo and enter it
+git clone https://github.com/brown-tech-info/research-agent-MCP-tool.git
+cd research-agent-MCP-tool
+
+# 3. Create an azd environment
 azd env new research-agent-prod
 
-# 3. Set required environment variables (never committed to source)
-azd env set AZURE_OPENAI_ENDPOINT   https://<your-resource>.cognitiveservices.azure.com/
-azd env set AZURE_OPENAI_DEPLOYMENT gpt-4o
-azd env set AZURE_OPENAI_API_VERSION 2024-12-01-preview
-azd env set TAVILY_API_KEY           <your-tavily-api-key>
+# 4. Set required configuration (never committed to source)
+azd env set AZURE_OPENAI_ENDPOINT     https://<your-resource>.cognitiveservices.azure.com/
+azd env set AZURE_OPENAI_DEPLOYMENT   gpt-4o
+azd env set AZURE_OPENAI_API_VERSION  2024-12-01-preview
+azd env set TAVILY_API_KEY            <your-tavily-api-key>
 
 # Optional — provide your OpenAI resource ID to auto-assign Managed Identity RBAC
 # azd env set AZURE_OPENAI_RESOURCE_ID /subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.CognitiveServices/accounts/<name>
 
-# No key needed for Azure OpenAI or Cosmos DB — Managed Identity handles auth automatically
-
-# 4. Provision infrastructure and deploy both services
+# 5. Provision infrastructure and deploy everything
 azd up
 ```
 
@@ -261,19 +267,19 @@ azd up
 5. Build the React frontend and deploy to Static Web Apps
 6. Wire everything together: SWA URL → CORS, Container App URL → Cosmos endpoint env var
 
-After deployment, `azd` prints the frontend URL. Open it to use the agent.
+After deployment, `azd` prints the frontend URL — open it to use the agent.
 
 ### Subsequent deployments
 
 ```bash
-# Redeploy after code changes
+# Redeploy after code changes (from repo root)
 azd deploy
 ```
 
 ### Tear down
 
 ```bash
-# Remove all Azure resources
+# Remove all Azure resources (from repo root)
 azd down
 ```
 
