@@ -7,8 +7,8 @@ resource staticWebApp 'Microsoft.Web/staticSites@2022-09-01' = {
   location: location
   tags: union(tags, { 'azd-service-name': 'frontend' })
   sku: {
-    name: 'Free'
-    tier: 'Free'
+    name: 'Standard'
+    tier: 'Standard'
   }
   properties: {
     buildProperties: {

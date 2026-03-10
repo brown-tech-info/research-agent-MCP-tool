@@ -231,6 +231,8 @@ Install these tools before you begin (one-time setup):
 - An Azure subscription with an existing **Azure OpenAI** resource and a `gpt-4o` deployment
 - A free **Tavily** account for web search — sign up at [app.tavily.com](https://app.tavily.com) (1,000 searches/month, no credit card required)
 
+> **Cost note:** `azd up` provisions a Static Web Apps **Standard** tier (~$9/month) required for the `/api/*` backend proxy to work, plus a serverless Cosmos DB account and a Container App (always-on, 0.5 vCPU / 1 GB). Estimated total: ~$15–20/month depending on usage. Run `azd down` to remove all resources.
+
 ### Deploy
 
 Run all commands from the **repo root directory**:
