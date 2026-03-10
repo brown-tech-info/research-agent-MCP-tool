@@ -110,6 +110,7 @@ The server validates all four variables on startup and exits immediately with a 
 
 ```bash
 npm install
+npm run build   # compiles all workspace packages (servers + orchestrator)
 ```
 
 **Terminal 1 — Backend (orchestrator API on port 3001):**
@@ -125,6 +126,8 @@ npm run dev
 ```
 
 Open **http://localhost:5173**.
+
+> **After any code change to a server package**, run `npm run build` from the root before restarting the orchestrator to ensure the compiled output is up to date.
 
 > If port 3001 is already in use:
 > ```powershell
@@ -322,8 +325,6 @@ All substantive research responses follow this structure (Spec §11.2):
 
 - **Email sending**: Draft-only by design. M365 Graph API / OAuth not integrated.
 - **Web search**: Requires `TAVILY_API_KEY`. Without it, open-ended regulatory/news queries fall back to PubMed only.
-- **Memory persistence**: In-memory within a single server process; no database backing.
-  → **Being replaced with Cosmos DB (see Upcoming Tasks)**.
 
 ## Contributing
 
