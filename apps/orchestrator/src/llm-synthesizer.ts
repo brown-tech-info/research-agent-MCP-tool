@@ -16,6 +16,7 @@ import { LLMClient } from "./llm-client";
 import { ResearchResponse, EvidenceSource, Reference } from "./types";
 import { ToolInvocationResult } from "./mcp-types";
 import { ParsedQuery } from "./llm-query-parser";
+import { extractAndParseJSON } from "./json-utils";
 
 export const SYSTEM_PROMPT = `You are a synthesis engine for a pharmaceutical research assistant.
 You will be given a researcher's question and the raw outputs from biomedical data tools (PubMed, ClinicalTrials.gov, web sources).
@@ -77,14 +78,9 @@ export async function synthesizeWithLLM(
   const userMessage = buildSynthesisUserMessage(question, parsedQuery, toolResults, history);
 
   const raw = await llm.chat(SYSTEM_PROMPT, userMessage);
-  // Extract the JSON object regardless of markdown fences or trailing whitespace.
-  // GPT-4o sometimes wraps output in ```json ... ``` even when instructed not to.
-  const match = raw.match(/\{[\s\S]*\}/);
-  const json = match ? match[0].trim() : raw.trim();
-
   let parsed: ResearchResponse;
   try {
-    parsed = JSON.parse(json) as ResearchResponse;
+    parsed = extractAndParseJSON<ResearchResponse>(raw);
   } catch {
     throw new Error(`LLM synthesizer returned invalid JSON: ${raw.slice(0, 200)}`);
   }

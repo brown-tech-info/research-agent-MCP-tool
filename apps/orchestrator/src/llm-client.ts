@@ -45,6 +45,7 @@ class AzureLLMClient implements LLMClient {
         { role: "user", content: userMessage },
       ],
       temperature: 0,
+      response_format: { type: "json_object" },
     });
 
     const content = response.choices[0]?.message?.content;
@@ -61,6 +62,7 @@ class AzureLLMClient implements LLMClient {
       ],
       temperature: 0,
       stream: true,
+      response_format: { type: "json_object" },
     });
 
     for await (const chunk of stream) {

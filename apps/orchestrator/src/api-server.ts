@@ -21,6 +21,7 @@ import type { Citation } from "@research-agent/memory-mcp";
 import { createLLMClient } from "./llm-client";
 import { parseQuery } from "./llm-query-parser";
 import { SYSTEM_PROMPT, buildSynthesisUserMessage } from "./llm-synthesizer";
+import { extractAndParseJSON } from "./json-utils";
 
 // --- Audit persistence (T6.1) ---
 const auditFile = process.env.AUDIT_FILE ?? join(process.cwd(), "data", "audit.jsonl");
@@ -233,17 +234,25 @@ app.post("/api/research/stream", async (req: Request, res: Response) => {
       send("token", { chunk });
     }
 
-    // Parse the complete JSON response
-    // Extract JSON object regardless of markdown fences — GPT-4o sometimes wraps output in ```json...```
-    const match = fullText.match(/\{[\s\S]*\}/);
-    const jsonText = match ? match[0].trim() : fullText.trim();
+    // Parse the complete streamed JSON — with one automatic retry via non-streaming
+    // if the first parse attempt fails (handles rare truncation / malformed tokens)
     let synthesisResult: import("./types").ResearchResponse;
     try {
-      synthesisResult = JSON.parse(jsonText) as import("./types").ResearchResponse;
-    } catch {
-      send("error", { message: `Synthesis returned invalid JSON: ${fullText.slice(0, 200)}` });
-      res.end();
-      return;
+      synthesisResult = extractAndParseJSON<import("./types").ResearchResponse>(fullText);
+    } catch (parseErr) {
+      logger.warn("stream_parse_failed_retrying", {
+        error: (parseErr as Error).message,
+        preview: fullText.slice(0, 200),
+      });
+      send("status", { phase: "synthesizing", message: "Retrying synthesis…" });
+      try {
+        const retryRaw = await llmClient.chat(SYSTEM_PROMPT, userMessage);
+        synthesisResult = extractAndParseJSON<import("./types").ResearchResponse>(retryRaw);
+      } catch (retryErr) {
+        send("error", { message: `Synthesis failed after retry: ${(retryErr as Error).message}` });
+        res.end();
+        return;
+      }
     }
 
     const auditRecord = await auditRecorder.completeInteraction(synthesisResult);
