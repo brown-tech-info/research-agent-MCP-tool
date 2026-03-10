@@ -9,9 +9,10 @@ param resourceId string
 
 var roleAssignmentName = guid(principalId, roleDefinitionId, resourceId)
 
+// Scope to subscription — the role assignment targets the specific resource via roleDefinitionId.
+// Using subscription scope avoids the deprecated any() cast removed in recent Bicep versions.
 resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: roleAssignmentName
-  scope: any(resourceId)
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', roleDefinitionId)
     principalId: principalId
