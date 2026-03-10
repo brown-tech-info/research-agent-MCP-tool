@@ -9,6 +9,29 @@ interface Props {
   onSaveToMemory: (response: ResearchResponse) => Promise<void>;
 }
 
+const EXAMPLE_PROMPTS: { label: string; source: 'pubmed' | 'clinicaltrials' | 'web' | 'multi'; text: string }[] = [
+  {
+    label: 'Web',
+    source: 'web',
+    text: 'What are the latest FDA regulatory updates on GLP-1 receptor agonists for obesity in 2024?',
+  },
+  {
+    label: 'ClinicalTrials',
+    source: 'clinicaltrials',
+    text: "Are there any active Phase 3 clinical trials recruiting patients for Alzheimer's disease immunotherapy?",
+  },
+  {
+    label: 'PubMed',
+    source: 'pubmed',
+    text: 'What does the peer-reviewed literature say about the mechanism of action of semaglutide in reducing cardiovascular risk?',
+  },
+  {
+    label: 'PubMed + Trials',
+    source: 'multi',
+    text: 'What is the clinical evidence for CAR-T cell therapy in multiple myeloma, and are there ongoing trials?',
+  },
+];
+
 export default function ConversationPanel({ messages, isLoading, onSubmit, onSaveToMemory }: Props) {
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -42,6 +65,19 @@ export default function ConversationPanel({ messages, isLoading, onSubmit, onSav
           <div className="message-empty">
             <p>🔬</p>
             <p>No conversations yet. Enter a research question to begin.</p>
+            <div className="example-prompts">
+              {EXAMPLE_PROMPTS.map((prompt) => (
+                <button
+                  key={prompt.text}
+                  className={`example-prompt-card example-prompt-${prompt.source}`}
+                  onClick={() => setInput(prompt.text)}
+                  type="button"
+                >
+                  <span className={`example-prompt-badge example-badge-${prompt.source}`}>{prompt.label}</span>
+                  <span className="example-prompt-text">{prompt.text}</span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

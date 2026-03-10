@@ -242,6 +242,20 @@ export default function App() {
       <header className="app-header">
         <span>🔬</span>
         Pharmaceutical Research Assistant
+        {messages.length > 0 && (
+          <button
+            className="new-research-btn"
+            onClick={() => {
+              setMessages([]);
+              setLastInteractionId(null);
+              setAuditRecord(null);
+              setError(null);
+            }}
+            aria-label="Start new research"
+          >
+            + New Research
+          </button>
+        )}
       </header>
 
       {error && (

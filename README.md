@@ -17,6 +17,7 @@ The agent assists researchers by:
 - **Synthesizing evidence** with explicit inline citations and uncertainty signaling (GPT-4o)
 - **Streaming responses** progressively — tokens appear as GPT-4o generates them
 - **Supporting multi-turn conversations** — follow-up questions inherit prior context automatically
+- **Clickable example prompts** — four pre-built queries surface on the empty state to help users get started
 - **Drafting professional emails** from research results — type "email that to me@example.com" in chat
 - **Maintaining full audit trails** for traceability and reproducibility
 - **Persisting research memory** — save, inspect, and delete research notes across sessions
@@ -144,6 +145,8 @@ Runs all 103 tests across MCP contract tests and orchestrator integration tests.
 
 ### Research queries
 
+When you open the app with an empty conversation, four **clickable example prompts** are shown — one for each data source (Web, ClinicalTrials, PubMed, PubMed + Trials). Click any card to populate the input field, then submit or edit as needed. They disappear once a conversation starts.
+
 Type any natural language research question:
 > *What is the evidence for metformin in polycystic ovary syndrome?*
 
@@ -152,6 +155,10 @@ The agent will:
 2. Query PubMed and ClinicalTrials.gov (with visible status updates in the chat bubble)
 3. Stream the synthesis response token-by-token as GPT-4o generates it
 4. Display the structured result (Summary / Evidence Overview / Synthesis / Confidence & Gaps / References)
+
+### Starting a new conversation
+
+A **+ New Research** button appears in the top-right of the header whenever a conversation is active. Clicking it clears the current conversation, resets the Tool Trace panel, and returns to the empty state with example prompts — no page refresh needed.
 
 ### Multi-turn conversations
 
@@ -303,6 +310,8 @@ All substantive research responses follow this structure (Spec §11.2):
 | T9.7 | Streaming LLM responses via SSE — tokens visible as synthesis happens | ✅ |
 | T9.8 | GitHub Actions CI — automated test runs on push/PR, CI badge in README | ✅ |
 | T9.9 | `web-search` tool via Tavily Search API for regulatory/news open-ended queries | ✅ |
+| — | Clickable example prompts — four pre-built query cards on empty state, color-coded by source | ✅ |
+| — | + New Research button — clears conversation from the header without a page refresh | ✅ |
 | — | Email draft from chat — natural language intent → draft review card | ✅ |
 | — | Azure deployment — `azd up` provisions Container Apps + Static Web Apps | ✅ |
 

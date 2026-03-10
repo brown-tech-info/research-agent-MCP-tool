@@ -66,6 +66,24 @@ body {
   font-size: 20px;
 }
 
+.new-research-btn {
+  margin-left: auto;
+  padding: 5px 14px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: inherit;
+}
+
+.new-research-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
 .app-body {
   display: flex;
   flex: 1;
@@ -651,6 +669,62 @@ body {
   background: var(--error);
   color: #fff;
   border-color: var(--error);
+}
+
+/* ===== Example Prompts ===== */
+.example-prompts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 24px;
+  max-width: 640px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.example-prompt-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  font-family: inherit;
+}
+
+.example-prompt-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.example-prompt-web:hover     { border-color: var(--web); background: #f0fbfd; }
+.example-prompt-pubmed:hover  { border-color: var(--pubmed); background: #eef5ff; }
+.example-prompt-clinicaltrials:hover { border-color: var(--trials); background: #f5f0ff; }
+.example-prompt-multi:hover   { border-color: var(--pubmed); background: #eef5ff; }
+
+.example-prompt-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 10px;
+  text-transform: uppercase;
+}
+
+.example-badge-web           { background: #e8f7fa; color: var(--web); border: 1px solid #a8dce8; }
+.example-badge-pubmed        { background: #e8f0fb; color: var(--pubmed); border: 1px solid #b3cdf5; }
+.example-badge-clinicaltrials { background: #f0ebfb; color: var(--trials); border: 1px solid #d2bbf5; }
+.example-badge-multi         { background: #e8f0fb; color: var(--pubmed); border: 1px solid #b3cdf5; }
+
+.example-prompt-text {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.45;
 }
 
 /* ===== Error Banner ===== */
