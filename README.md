@@ -92,19 +92,27 @@ All work on this system **must** comply with these documents in precedence order
 cp apps/orchestrator/.env.example apps/orchestrator/.env
 ```
 
-Then fill in your values:
+Fill in your values — all authentication uses `DefaultAzureCredential` (no API keys needed for Azure OpenAI or Cosmos DB):
 
 ```env
+# Azure OpenAI — run `az login` once; no API key needed
 AZURE_OPENAI_ENDPOINT=https://<your-resource>.cognitiveservices.azure.com/
-AZURE_OPENAI_KEY=<your-api-key>
 AZURE_OPENAI_DEPLOYMENT=gpt-4o
-AZURE_OPENAI_API_VERSION=2024-10-01-preview
+AZURE_OPENAI_API_VERSION=2024-12-01-preview
+
+# Web search (regulatory/news queries) — free at https://app.tavily.com
+TAVILY_API_KEY=<your-tavily-api-key>
+
+# Cosmos DB memory persistence — az login credential used automatically
+# Leave unset to use in-memory store (data lost on restart)
+COSMOS_ENDPOINT=https://<your-cosmos-account>.documents.azure.com:443/
 ```
 
-> **Note:** `.env` is gitignored — never commit credentials.
-> If Azure OpenAI is not configured the orchestrator falls back to keyword-based search (no LLM synthesis or streaming).
+> **No API keys required** for Azure OpenAI or Cosmos DB. Run `az login` once and `DefaultAzureCredential` handles authentication for both — locally and in Azure (Managed Identity).
 
-The server validates all four variables on startup and exits immediately with a clear error message if any are missing or contain placeholder values.
+> `.env` is gitignored — never commit credentials. If Azure OpenAI is not configured the orchestrator falls back to keyword-based search (no LLM synthesis or streaming).
+
+See `.env.example` for the full reference including how to provision a local Cosmos DB account and grant yourself the required role.
 
 ### Install & Run
 
@@ -206,8 +214,9 @@ User
 Azure Static Web Apps (React frontend)
   ↓  /api/* proxy
 Azure Container Apps (Express orchestrator, port 3001, scales to zero)
-  ├── Azure OpenAI (your existing resource)
-  ├── Tavily Search API
+  ├── Azure OpenAI (your existing resource, Managed Identity auth)
+  ├── Azure Cosmos DB (serverless, research memory, Managed Identity auth)
+  ├── Tavily Search API (web/regulatory queries)
   └── Application Insights + Log Analytics
 ```
 
@@ -230,21 +239,23 @@ azd auth login
 azd env new research-agent-prod
 
 # 3. Set required environment variables (never committed to source)
-azd env set AZURE_OPENAI_ENDPOINT  https://<your-resource>.cognitiveservices.azure.com/
-azd env set AZURE_OPENAI_KEY       <your-openai-api-key>
+azd env set AZURE_OPENAI_ENDPOINT   https://<your-resource>.cognitiveservices.azure.com/
 azd env set AZURE_OPENAI_DEPLOYMENT gpt-4o
-azd env set AZURE_OPENAI_API_VERSION 2024-10-01-preview
-azd env set TAVILY_API_KEY          <your-tavily-api-key>
+azd env set AZURE_OPENAI_API_VERSION 2024-12-01-preview
+azd env set TAVILY_API_KEY           <your-tavily-api-key>
+
+# No key needed for Azure OpenAI or Cosmos DB — Managed Identity handles auth automatically
 
 # 4. Provision infrastructure and deploy both services
 azd up
 ```
 
 `azd up` will:
-1. Provision all Azure resources (Container Apps environment, Container App, Container Registry, Static Web App, Application Insights)
-2. Build and push the orchestrator Docker image to ACR
-3. Build the React frontend and deploy to Static Web Apps
-4. Wire the SWA URL into the Container App's `CORS_ORIGIN` environment variable
+1. Provision all Azure resources (Container Apps environment, Container App, Container Registry, Static Web App, **Cosmos DB serverless account**, Application Insights)
+2. Grant the Container App's Managed Identity access to Azure OpenAI and Cosmos DB via RBAC (no secrets stored)
+3. Build and push the orchestrator Docker image to ACR
+4. Build the React frontend and deploy to Static Web Apps
+5. Wire the SWA URL into the Container App's `CORS_ORIGIN` environment variable and the Cosmos DB endpoint into `COSMOS_ENDPOINT`
 
 After deployment, `azd` prints the frontend URL. Open it to use the agent.
 
