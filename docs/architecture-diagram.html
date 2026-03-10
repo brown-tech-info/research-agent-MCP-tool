@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pharmaceutical Research Assistant — Architecture</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #f0f4f8;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 32px 16px 48px;
+      min-height: 100vh;
+    }
+
+    .diagram {
+      width: 960px;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+      padding: 36px 40px 40px;
+    }
+
+    /* ── Title ── */
+    .title {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .title h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1a202c;
+      letter-spacing: -0.3px;
+    }
+    .title p {
+      font-size: 12px;
+      color: #718096;
+      margin-top: 4px;
+    }
+
+    /* ── Layer ── */
+    .layer {
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 0;
+    }
+    .layer-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      opacity: 0.7;
+    }
+
+    /* ── Row of cards ── */
+    .card-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: nowrap;
+    }
+    .card {
+      flex: 1;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      line-height: 1.4;
+    }
+    .card sub {
+      display: block;
+      font-size: 10px;
+      font-weight: 400;
+      opacity: 0.75;
+      margin-top: 2px;
+    }
+
+    /* ── Arrow ── */
+    .arrow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 6px 0;
+      gap: 1px;
+    }
+    .arrow-label {
+      font-size: 10px;
+      color: #718096;
+      background: #f0f4f8;
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-weight: 500;
+    }
+    .arrow-line {
+      width: 2px;
+      height: 14px;
+      background: #CBD5E0;
+    }
+    .arrow-head {
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 7px solid #CBD5E0;
+    }
+
+    /* ── Side-by-side layout for orchestrator row ── */
+    .orch-row {
+      display: flex;
+      gap: 12px;
+      align-items: stretch;
+    }
+    .orch-main { flex: 1; }
+    .orch-side { width: 200px; flex-shrink: 0; }
+
+    /* ── PIPELINE inside orchestrator ── */
+    .pipeline {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .pipe-step {
+      flex: 1;
+      border-radius: 7px;
+      padding: 8px 6px;
+      font-size: 11px;
+      font-weight: 600;
+      text-align: center;
+      color: #744210;
+      background: #FEFCE8;
+      border: 1.5px solid #F6E05E;
+      line-height: 1.3;
+    }
+    .pipe-arrow {
+      font-size: 14px;
+      color: #D69E2E;
+      flex-shrink: 0;
+    }
+
+    .orch-bottom {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .orch-bottom .card {
+      flex: 1;
+    }
+
+    /* ── COLORS: User ── */
+    .layer-user {
+      background: #EBF8FF;
+      border: 1.5px solid #90CDF4;
+    }
+    .card-user {
+      background: #BEE3F8;
+      color: #2C5282;
+      border: 1.5px solid #90CDF4;
+    }
+
+    /* ── COLORS: Frontend ── */
+    .layer-frontend {
+      background: #F0FFF4;
+      border: 1.5px solid #9AE6B4;
+    }
+    .card-frontend {
+      background: #C6F6D5;
+      color: #276749;
+      border: 1.5px solid #9AE6B4;
+    }
+
+    /* ── COLORS: Orchestrator ── */
+    .layer-orch {
+      background: #FFFAF0;
+      border: 1.5px solid #F6AD55;
+    }
+
+    /* ── COLORS: Azure OpenAI ── */
+    .layer-openai {
+      background: #EBF8FF;
+      border: 1.5px dashed #4299E1;
+      border-radius: 12px;
+      padding: 14px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    .openai-icon {
+      font-size: 26px;
+      margin-bottom: 6px;
+    }
+    .openai-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: #2B6CB0;
+    }
+    .openai-sub {
+      font-size: 10px;
+      color: #4A90D9;
+      margin-top: 3px;
+    }
+    .openai-badge {
+      margin-top: 8px;
+      font-size: 9px;
+      background: #BEE3F8;
+      color: #2C5282;
+      border-radius: 20px;
+      padding: 2px 8px;
+      font-weight: 600;
+    }
+    .openai-uses {
+      margin-top: 6px;
+      font-size: 9px;
+      color: #718096;
+      line-height: 1.5;
+    }
+
+    /* ── COLORS: MCP Servers ── */
+    .layer-mcp {
+      background: #FAF5FF;
+      border: 1.5px solid #D6BCFA;
+    }
+    .card-mcp {
+      background: #E9D8FD;
+      color: #44337A;
+      border: 1.5px solid #D6BCFA;
+    }
+
+    /* ── COLORS: External ── */
+    .layer-ext {
+      background: #F7FAFC;
+      border: 1.5px solid #CBD5E0;
+    }
+    .card-ext {
+      background: #EDF2F7;
+      color: #2D3748;
+      border: 1.5px solid #CBD5E0;
+    }
+
+    /* ── COLORS: Azure infra ── */
+    .layer-azure {
+      background: #EBF8FF;
+      border: 1.5px solid #63B3ED;
+    }
+    .card-azure {
+      background: #BEE3F8;
+      color: #2A4365;
+      border: 1.5px solid #63B3ED;
+    }
+
+    /* ── SSE / Audit bottom chips ── */
+    .chip-sse {
+      background: #FED7D7;
+      color: #742A2A;
+      border: 1.5px solid #FC8181;
+    }
+    .chip-audit {
+      background: #FEF3C7;
+      color: #7B341E;
+      border: 1.5px solid #F6AD55;
+    }
+
+    /* ── Legend ── */
+    .legend {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid #E2E8F0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 24px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #4A5568;
+    }
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    /* ── Bidirectional arrow ── */
+    .bidir {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      justify-content: center;
+      font-size: 11px;
+      color: #A0AEC0;
+      margin: 4px 0;
+    }
+    .bidir-line {
+      flex: 1;
+      height: 1.5px;
+      background: #CBD5E0;
+      max-width: 80px;
+    }
+  </style>
+</head>
+<body>
+<div class="diagram">
+
+  <!-- Title -->
+  <div class="title">
+    <h1>Pharmaceutical Research Assistant — Functional Architecture</h1>
+    <p>MCP-powered evidence discovery &amp; synthesis for pharmaceutical researchers</p>
+  </div>
+
+  <!-- LAYER 1: User -->
+  <div class="layer layer-user" style="padding: 12px 16px;">
+    <div class="layer-label" style="color:#2C5282;">Researcher</div>
+    <div class="card-row">
+      <div class="card card-user" style="max-width:260px; margin:0 auto; flex:none; width:100%;">
+        👩‍🔬 Pharmaceutical Researcher
+        <sub>Natural language research queries</sub>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="arrow">
+    <div class="arrow-line"></div>
+    <div class="arrow-label">HTTPS</div>
+    <div class="arrow-line"></div>
+    <div class="arrow-head"></div>
+  </div>
+
+  <!-- LAYER 2: Frontend -->
+  <div class="layer layer-frontend">
+    <div class="layer-label" style="color:#276749;">Frontend &nbsp;·&nbsp; React + Vite &nbsp;|&nbsp; Azure Static Web App (port 5173)</div>
+    <div class="card-row">
+      <div class="card card-frontend">
+        💬 ConversationPanel
+        <sub>Multi-turn chat UI + streaming tokens</sub>
+      </div>
+      <div class="card card-frontend">
+        🔍 ToolTracePanel
+        <sub>Live MCP call inspector</sub>
+      </div>
+      <div class="card card-frontend">
+        🧠 MemoryPanel
+        <sub>Save / inspect / delete notes</sub>
+      </div>
+      <div class="card card-frontend">
+        ✉️ DraftMailCard
+        <sub>Review email drafts (copy-only)</sub>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="arrow">
+    <div class="arrow-line"></div>
+    <div class="arrow-label">REST API &nbsp;·&nbsp; SSE Streaming &nbsp;/api/*</div>
+    <div class="arrow-line"></div>
+    <div class="arrow-head"></div>
+  </div>
+
+  <!-- LAYER 3: Orchestrator + Azure OpenAI side by side -->
+  <div class="orch-row">
+
+    <!-- Orchestrator -->
+    <div class="layer layer-orch orch-main">
+      <div class="layer-label" style="color:#7B341E;">Orchestrator &nbsp;·&nbsp; Express / Node.js &nbsp;|&nbsp; Azure Container App (port 3001)</div>
+
+      <!-- Pipeline -->
+      <div class="pipeline">
+        <div class="pipe-step">🔤 LLM Query Parser<br/><span style="font-size:9px;font-weight:400;opacity:.75">NL → search terms</span></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step">🎯 Tool Selector<br/><span style="font-size:9px;font-weight:400;opacity:.75">min required tools</span></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step">🔌 MCP Client<br/><span style="font-size:9px;font-weight:400;opacity:.75">invokes MCP servers</span></div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-step">📝 LLM Synthesizer<br/><span style="font-size:9px;font-weight:400;opacity:.75">cited structured output</span></div>
+      </div>
+
+      <!-- Bottom chips -->
+      <div class="orch-bottom">
+        <div class="card chip-sse">
+          📡 SSE Streaming
+          <sub>Token-by-token to frontend</sub>
+        </div>
+        <div class="card chip-audit">
+          🗒️ Audit Recorder
+          <sub>Full trace → audit.jsonl + Cosmos DB</sub>
+        </div>
+      </div>
+    </div>
+
+    <!-- Azure OpenAI -->
+    <div class="layer-openai orch-side">
+      <div class="openai-icon">🤖</div>
+      <div class="openai-name">Azure OpenAI</div>
+      <div class="openai-sub">GPT-4o</div>
+      <div class="openai-badge">Managed Identity Auth</div>
+      <div class="openai-uses">
+        ↔ Query parsing<br/>
+        ↔ Evidence synthesis<br/>
+        ↔ SSE token streaming
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Arrow -->
+  <div class="arrow" style="margin-top:8px;">
+    <div class="arrow-line"></div>
+    <div class="arrow-label">Model Context Protocol (MCP)</div>
+    <div class="arrow-line"></div>
+    <div class="arrow-head"></div>
+  </div>
+
+  <!-- LAYER 4: MCP Servers -->
+  <div class="layer layer-mcp">
+    <div class="layer-label" style="color:#44337A;">MCP Servers &nbsp;·&nbsp; TypeScript / Node.js</div>
+    <div class="card-row">
+      <div class="card card-mcp">
+        📚 pubmed-mcp
+        <sub>esearch + efetch<br/>full abstracts</sub>
+      </div>
+      <div class="card card-mcp">
+        🏥 clinicaltrials-mcp
+        <sub>trial search + NCT fetch<br/>phase / status / endpoints</sub>
+      </div>
+      <div class="card card-mcp">
+        🌐 web-mcp
+        <sub>Tavily Search API<br/>regulatory &amp; news</sub>
+      </div>
+      <div class="card card-mcp">
+        ✉️ m365-mail-mcp
+        <sub>draft-only<br/>no send capability</sub>
+      </div>
+      <div class="card card-mcp">
+        🧠 memory-mcp
+        <sub>user-controlled notes<br/>explicit save/delete</sub>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="arrow">
+    <div class="arrow-line"></div>
+    <div class="arrow-label">HTTPS / Public APIs</div>
+    <div class="arrow-line"></div>
+    <div class="arrow-head"></div>
+  </div>
+
+  <!-- LAYER 5: External APIs -->
+  <div class="layer layer-ext">
+    <div class="layer-label" style="color:#4A5568;">External Data Sources</div>
+    <div class="card-row">
+      <div class="card card-ext">
+        🔬 NCBI / PubMed
+        <sub>Peer-reviewed literature<br/>PMIDs + abstracts</sub>
+      </div>
+      <div class="card card-ext">
+        🧪 ClinicalTrials.gov
+        <sub>Registered trials<br/>NCT IDs + metadata</sub>
+      </div>
+      <div class="card card-ext">
+        🔎 Tavily Search
+        <sub>Web / regulatory news<br/>API key required</sub>
+      </div>
+      <div class="card card-ext">
+        📧 M365 Graph API
+        <sub>Email drafting only<br/>OAuth (not wired)</sub>
+      </div>
+      <div class="card card-ext">
+        🗄️ Azure Cosmos DB
+        <sub>Research memory<br/>Managed Identity auth</sub>
+      </div>
+    </div>
+  </div>
+
+  <!-- Azure infra footer -->
+  <div class="layer layer-azure" style="margin-top:16px; padding: 12px 16px;">
+    <div class="layer-label" style="color:#2A4365;">Azure Infrastructure (azd up)</div>
+    <div class="card-row">
+      <div class="card card-azure">
+        ☁️ Static Web App
+        <sub>React frontend hosting</sub>
+      </div>
+      <div class="card card-azure">
+        📦 Container App
+        <sub>Orchestrator (0.5 vCPU / 1 GB)</sub>
+      </div>
+      <div class="card card-azure">
+        🐳 Container Registry
+        <sub>Docker image storage</sub>
+      </div>
+      <div class="card card-azure">
+        🗄️ Cosmos DB Serverless
+        <sub>Memory persistence</sub>
+      </div>
+      <div class="card card-azure">
+        📊 App Insights
+        <sub>Monitoring + Log Analytics</sub>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#C6F6D5; border:1.5px solid #9AE6B4;"></div>
+      Frontend (React)
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#FEFCE8; border:1.5px solid #F6E05E;"></div>
+      Orchestrator pipeline
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#BEE3F8; border:1.5px solid #90CDF4;"></div>
+      Azure OpenAI / infra
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#E9D8FD; border:1.5px solid #D6BCFA;"></div>
+      MCP Servers
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#EDF2F7; border:1.5px solid #CBD5E0;"></div>
+      External APIs
+    </div>
+    <div class="legend-item" style="color:#718096; font-style:italic;">
+      ✱ All external data via MCP tools only — never from model memory
+    </div>
+    <div class="legend-item" style="color:#718096; font-style:italic;">
+      ✱ Default tool order: PubMed → ClinicalTrials.gov → Web
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
