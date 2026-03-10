@@ -273,6 +273,30 @@ azd up
 
 After deployment, `azd` prints the frontend URL — open it to use the agent.
 
+### Post-deployment: Grant Azure OpenAI access
+
+The Container App uses Managed Identity to call Azure OpenAI — **no API key needed**. However, you must grant it the **Cognitive Services OpenAI User** role on your OpenAI resource. This is a one-time manual step because the OpenAI resource typically lives in a different resource group than the deployed app.
+
+```bash
+# 1. Get the Container App's managed identity principal ID
+az containerapp show \
+  --name <your-container-app-name> \
+  --resource-group rg-<your-env-name> \
+  --query "identity.principalId" -o tsv
+
+# Tip: azd outputs this as CONTAINER_APP_PRINCIPAL_ID — run: azd env get-values
+
+# 2. Grant the role (replace <principal-id> and <your-openai-rg>)
+az role assignment create \
+  --role "Cognitive Services OpenAI User" \
+  --assignee <principal-id> \
+  --scope /subscriptions/<subscription-id>/resourceGroups/<your-openai-rg>/providers/Microsoft.CognitiveServices/accounts/<your-openai-name>
+```
+
+> **Why manual?** Azure RBAC role assignments are scoped to a specific resource. When your OpenAI resource is in a different resource group from the app (common in enterprise setups), the automated Bicep assignment cannot cross resource group boundaries without knowing the OpenAI resource group name upfront. Setting `AZURE_OPENAI_RESOURCE_ID` automates this if both resources are in the same subscription and resource group.
+
+Once the role is assigned, RBAC propagation takes ~1-2 minutes before the first request succeeds.
+
 ### Subsequent deployments
 
 ```bash
