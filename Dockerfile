@@ -6,7 +6,6 @@ WORKDIR /app
 # Copy workspace manifests and install all dependencies
 COPY package.json package-lock.json ./
 COPY apps/orchestrator/package.json ./apps/orchestrator/
-COPY apps/frontend/package.json ./apps/frontend/
 COPY servers/pubmed-mcp/package.json ./servers/pubmed-mcp/
 COPY servers/clinicaltrials-mcp/package.json ./servers/clinicaltrials-mcp/
 COPY servers/web-mcp/package.json ./servers/web-mcp/
@@ -20,7 +19,13 @@ COPY tsconfig.json ./
 COPY apps/orchestrator/ ./apps/orchestrator/
 COPY servers/ ./servers/
 
-RUN npm run build --workspaces --if-present
+# Build only server-side workspaces — frontend is deployed separately to Static Web Apps by azd
+RUN npm run build -w servers/pubmed-mcp \
+                  -w servers/clinicaltrials-mcp \
+                  -w servers/web-mcp \
+                  -w servers/m365-mail-mcp \
+                  -w servers/memory-mcp \
+                  -w apps/orchestrator
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────────────
 FROM node:20-slim AS runner
