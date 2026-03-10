@@ -187,6 +187,8 @@ The **Tool Trace** panel shows every MCP tool invoked, its inputs, outputs, and 
 
 The **Memory** panel lets you save, inspect, and delete research notes. Saved notes preserve citations. Nothing is saved automatically — all memory is explicitly user-controlled.
 
+When `COSMOS_ENDPOINT` is configured, notes persist across server restarts in Azure Cosmos DB using managed identity authentication (no connection string needed). Without it, an in-memory store is used (data is lost on restart — fine for local testing).
+
 ## Deploy to Azure
 
 [![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com)
@@ -312,6 +314,7 @@ All substantive research responses follow this structure (Spec §11.2):
 | T9.9 | `web-search` tool via Tavily Search API for regulatory/news open-ended queries | ✅ |
 | — | Clickable example prompts — four pre-built query cards on empty state, color-coded by source | ✅ |
 | — | + New Research button — clears conversation from the header without a page refresh | ✅ |
+| — | Cosmos DB-backed research memory — persists across restarts, managed identity auth | ✅ |
 | — | Email draft from chat — natural language intent → draft review card | ✅ |
 | — | Azure deployment — `azd up` provisions Container Apps + Static Web Apps | ✅ |
 
@@ -320,6 +323,7 @@ All substantive research responses follow this structure (Spec §11.2):
 - **Email sending**: Draft-only by design. M365 Graph API / OAuth not integrated.
 - **Web search**: Requires `TAVILY_API_KEY`. Without it, open-ended regulatory/news queries fall back to PubMed only.
 - **Memory persistence**: In-memory within a single server process; no database backing.
+  → **Being replaced with Cosmos DB (see Upcoming Tasks)**.
 
 ## Contributing
 

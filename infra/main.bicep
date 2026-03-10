@@ -86,6 +86,21 @@ module staticWebApp './modules/static-web-app.bicep' = {
 }
 
 // ---------------------------------------------------------------------------
+// Cosmos DB (research memory — serverless, managed identity auth)
+// Provisioned before Container Apps so the endpoint is available as an env var.
+// ---------------------------------------------------------------------------
+
+module cosmos './modules/cosmos.bicep' = {
+  name: 'cosmos'
+  scope: rg
+  params: {
+    location: location
+    tags: tags
+    accountName: '${abbrs.documentDBDatabaseAccounts}${resourceToken}'
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Container Apps (orchestrator) — CORS wired to SWA URL in one pass
 // ---------------------------------------------------------------------------
 
@@ -104,6 +119,7 @@ module containerApps './modules/container-apps.bicep' = {
     azureOpenAiDeployment: azureOpenAiDeployment
     azureOpenAiApiVersion: azureOpenAiApiVersion
     corsOrigin: 'https://${staticWebApp.outputs.defaultHostname}'
+    cosmosEndpoint: cosmos.outputs.cosmosEndpoint
   }
 }
 
@@ -123,6 +139,19 @@ module openAiRoleAssignment './modules/role-assignment.bicep' = if (!empty(azure
 }
 
 // ---------------------------------------------------------------------------
+// RBAC — grant Container App managed identity Cosmos DB Built-in Data Contributor
+// ---------------------------------------------------------------------------
+
+module cosmosRoleAssignment './modules/cosmos-role-assignment.bicep' = {
+  name: 'cosmos-role-assignment'
+  scope: rg
+  params: {
+    cosmosAccountName: cosmos.outputs.cosmosAccountName
+    principalId: containerApps.outputs.containerAppPrincipalId
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Outputs (consumed by azd)
 // ---------------------------------------------------------------------------
 
@@ -136,4 +165,4 @@ output SERVICE_FRONTEND_STATIC_WEB_APP_NAME string = staticWebApp.outputs.name
 output SERVICE_FRONTEND_URI string = 'https://${staticWebApp.outputs.defaultHostname}'
 output APPLICATIONINSIGHTS_CONNECTION_STRING string = monitoring.outputs.applicationInsightsConnectionString
 output CONTAINER_APP_PRINCIPAL_ID string = containerApps.outputs.containerAppPrincipalId
-output APPLICATIONINSIGHTS_CONNECTION_STRING string = monitoring.outputs.applicationInsightsConnectionString
+output COSMOS_ENDPOINT string = cosmos.outputs.cosmosEndpoint

@@ -10,6 +10,9 @@ param azureOpenAiEndpoint string
 param azureOpenAiDeployment string
 param azureOpenAiApiVersion string
 
+@description('Cosmos DB endpoint for research memory persistence')
+param cosmosEndpoint string = ''
+
 @description('Allowed CORS origin for the frontend (e.g. https://stapp-xxxxx.azurestaticapps.net)')
 param corsOrigin string = 'http://localhost:5173'
 
@@ -110,6 +113,10 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
             {
               name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
               value: applicationInsightsConnectionString
+            }
+            {
+              name: 'COSMOS_ENDPOINT'
+              value: cosmosEndpoint
             }
           ]
         }

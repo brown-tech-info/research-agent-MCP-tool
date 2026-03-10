@@ -46,7 +46,6 @@ mcpClient.registerTool(new WebSearchTool());
 
 const orchestrator = new Orchestrator(mcpClient, auditRecorder, llmClient);
 
-const { saveTool, retrieveTool, deleteTool } = createMemoryTools();
 const draftTool = new DraftMailTool();
 
 // --- Express app ---
@@ -291,47 +290,6 @@ app.get("/api/audit/:interactionId", async (req: Request, res: Response, next: N
   }
 });
 
-// GET /api/memory
-app.get("/api/memory", async (_req: Request, res: Response, next: NextFunction) => {
-  try {
-    const result = await retrieveTool.execute({});
-    res.json(result);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// POST /api/memory
-app.post("/api/memory", async (req: Request, res: Response, next: NextFunction) => {
-  const { title, content, citations } = req.body as {
-    title?: string;
-    content?: string;
-    citations?: Citation[];
-  };
-
-  if (!title || !content) {
-    res.status(400).json({ error: "title and content are required" });
-    return;
-  }
-
-  try {
-    const result = await saveTool.execute({ title, content, citations });
-    res.status(201).json(result);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// DELETE /api/memory/:id
-app.delete("/api/memory/:id", async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const result = await deleteTool.execute({ id: req.params.id });
-    res.json(result);
-  } catch (error) {
-    next(error);
-  }
-});
-
 // POST /api/mail/draft
 app.post("/api/mail/draft", async (req: Request, res: Response, next: NextFunction) => {
   const { to, subject, body, citations } = req.body as {
@@ -412,17 +370,58 @@ function shutdown(signal: string, server: ReturnType<typeof app.listen>): void {
   }, 10_000).unref();
 }
 
-const server = app.listen(PORT, () => {
-  logger.info("server_started", {
-    port: PORT,
-    auditFile,
-    auditRecordsLoaded: auditStorage.size(),
-  });
-  process.stdout.write(`Research Agent API server running on http://localhost:${PORT}\n`);
-});
+async function bootstrap(): Promise<void> {
+  const memoryTools = await createMemoryTools();
 
-process.on("SIGTERM", () => shutdown("SIGTERM", server));
-process.on("SIGINT", () => shutdown("SIGINT", server));
+  // Patch memory routes with the resolved tools
+  app.get("/api/memory", async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await memoryTools.retrieveTool.execute({});
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/memory", async (req: Request, res: Response, next: NextFunction) => {
+    const { title, content, citations } = req.body as {
+      title?: string;
+      content?: string;
+      citations?: Citation[];
+    };
+    if (!title || !content) {
+      res.status(400).json({ error: "title and content are required" });
+      return;
+    }
+    try {
+      const result = await memoryTools.saveTool.execute({ title, content, citations });
+      res.status(201).json(result);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/memory/:id", async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await memoryTools.deleteTool.execute({ id: req.params.id });
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  const server = app.listen(PORT, () => {
+    logger.info("server_started", {
+      port: PORT,
+      auditFile,
+      auditRecordsLoaded: auditStorage.size(),
+    });
+    process.stdout.write(`Research Agent API server running on http://localhost:${PORT}\n`);
+  });
+
+  process.on("SIGTERM", () => shutdown("SIGTERM", server));
+  process.on("SIGINT", () => shutdown("SIGINT", server));
+}
 
 process.on("uncaughtException", (err) => {
   logger.error("uncaught_exception", { error: err.message, stack: err.stack });
@@ -432,5 +431,10 @@ process.on("uncaughtException", (err) => {
 process.on("unhandledRejection", (reason) => {
   const message = reason instanceof Error ? reason.message : String(reason);
   logger.error("unhandled_rejection", { error: message });
+  process.exit(1);
+});
+
+bootstrap().catch((err: Error) => {
+  logger.error("bootstrap_failed", { error: err.message, stack: err.stack });
   process.exit(1);
 });

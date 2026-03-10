@@ -1,14 +1,23 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
+
+// Mock @azure/cosmos so tests run offline — the in-memory store is used when COSMOS_ENDPOINT is unset
+vi.mock("@azure/cosmos", () => ({
+  CosmosClient: vi.fn(),
+}));
+vi.mock("@azure/identity", () => ({
+  DefaultAzureCredential: vi.fn(),
+}));
+
 import { createMemoryTools } from "../index.js";
 import type { Citation } from "../types.js";
 
 describe("Memory MCP Contract Tests", () => {
-  let saveTool: ReturnType<typeof createMemoryTools>["saveTool"];
-  let retrieveTool: ReturnType<typeof createMemoryTools>["retrieveTool"];
-  let deleteTool: ReturnType<typeof createMemoryTools>["deleteTool"];
+  let saveTool: Awaited<ReturnType<typeof createMemoryTools>>["saveTool"];
+  let retrieveTool: Awaited<ReturnType<typeof createMemoryTools>>["retrieveTool"];
+  let deleteTool: Awaited<ReturnType<typeof createMemoryTools>>["deleteTool"];
 
-  beforeEach(() => {
-    const tools = createMemoryTools();
+  beforeEach(async () => {
+    const tools = await createMemoryTools();
     saveTool = tools.saveTool;
     retrieveTool = tools.retrieveTool;
     deleteTool = tools.deleteTool;
