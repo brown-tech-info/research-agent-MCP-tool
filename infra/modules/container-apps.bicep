@@ -13,6 +13,10 @@ param azureOpenAiApiVersion string
 @description('Cosmos DB endpoint for research memory persistence')
 param cosmosEndpoint string = ''
 
+@description('Tavily Search API key for web/regulatory queries')
+@secure()
+param tavilyApiKey string = ''
+
 @description('Allowed CORS origin for the frontend (e.g. https://stapp-xxxxx.azurestaticapps.net)')
 param corsOrigin string = 'http://localhost:5173'
 
@@ -74,6 +78,10 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
             '2023-01-01-preview'
           ).passwords[0].value
         }
+        {
+          name: 'tavily-api-key'
+          value: tavilyApiKey
+        }
       ]
     }
     template: {
@@ -118,6 +126,10 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
               name: 'COSMOS_ENDPOINT'
               value: cosmosEndpoint
             }
+            {
+              name: 'TAVILY_API_KEY'
+              secretRef: 'tavily-api-key'
+            }
           ]
         }
       ]
@@ -142,3 +154,4 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
 output containerAppUri string = 'https://${containerApp.properties.configuration.ingress.fqdn}'
 output containerAppName string = containerApp.name
 output containerAppPrincipalId string = containerApp.identity.principalId
+output containerAppResourceId string = containerApp.id

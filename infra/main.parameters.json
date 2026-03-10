@@ -19,6 +19,9 @@
     },
     "azureOpenAiResourceId": {
       "value": "${AZURE_OPENAI_RESOURCE_ID}"
+    },
+    "tavilyApiKey": {
+      "value": "${TAVILY_API_KEY}"
     }
   }
 }

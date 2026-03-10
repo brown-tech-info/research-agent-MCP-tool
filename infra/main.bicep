@@ -16,10 +16,14 @@ param azureOpenAiEndpoint string
 param azureOpenAiDeployment string = 'gpt-4o'
 
 @description('Azure OpenAI API version')
-param azureOpenAiApiVersion string = '2024-10-01-preview'
+param azureOpenAiApiVersion string = '2024-12-01-preview'
 
 @description('Resource ID of the Azure OpenAI resource (for RBAC role assignment)')
 param azureOpenAiResourceId string = ''
+
+@description('Tavily Search API key for web/regulatory queries')
+@secure()
+param tavilyApiKey string = ''
 
 // ---------------------------------------------------------------------------
 // Derived names
@@ -120,6 +124,7 @@ module containerApps './modules/container-apps.bicep' = {
     azureOpenAiApiVersion: azureOpenAiApiVersion
     corsOrigin: 'https://${staticWebApp.outputs.defaultHostname}'
     cosmosEndpoint: cosmos.outputs.cosmosEndpoint
+    tavilyApiKey: tavilyApiKey
   }
 }
 
@@ -148,6 +153,21 @@ module cosmosRoleAssignment './modules/cosmos-role-assignment.bicep' = {
   params: {
     cosmosAccountName: cosmos.outputs.cosmosAccountName
     principalId: containerApps.outputs.containerAppPrincipalId
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SWA linked backend — proxies /api/* from the Static Web App to the Container App
+// Must deploy after both SWA and Container Apps are provisioned
+// ---------------------------------------------------------------------------
+
+module swaBackend './modules/swa-backend-link.bicep' = {
+  name: 'swa-backend-link'
+  scope: rg
+  params: {
+    staticWebAppName: staticWebApp.outputs.name
+    containerAppResourceId: containerApps.outputs.containerAppResourceId
+    location: location
   }
 }
 

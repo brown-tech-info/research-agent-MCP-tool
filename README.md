@@ -244,6 +244,9 @@ azd env set AZURE_OPENAI_DEPLOYMENT gpt-4o
 azd env set AZURE_OPENAI_API_VERSION 2024-12-01-preview
 azd env set TAVILY_API_KEY           <your-tavily-api-key>
 
+# Optional — provide your OpenAI resource ID to auto-assign Managed Identity RBAC
+# azd env set AZURE_OPENAI_RESOURCE_ID /subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.CognitiveServices/accounts/<name>
+
 # No key needed for Azure OpenAI or Cosmos DB — Managed Identity handles auth automatically
 
 # 4. Provision infrastructure and deploy both services
@@ -251,11 +254,12 @@ azd up
 ```
 
 `azd up` will:
-1. Provision all Azure resources (Container Apps environment, Container App, Container Registry, Static Web App, **Cosmos DB serverless account**, Application Insights)
-2. Grant the Container App's Managed Identity access to Azure OpenAI and Cosmos DB via RBAC (no secrets stored)
-3. Build and push the orchestrator Docker image to ACR
-4. Build the React frontend and deploy to Static Web Apps
-5. Wire the SWA URL into the Container App's `CORS_ORIGIN` environment variable and the Cosmos DB endpoint into `COSMOS_ENDPOINT`
+1. Provision all Azure resources (Container Apps environment, Container App, Container Registry, **Cosmos DB serverless**, Static Web App, Application Insights)
+2. Grant the Container App's Managed Identity access to Cosmos DB via RBAC (no secrets)
+3. Link the Container App as the `/api/*` backend for the Static Web App (automatic proxying)
+4. Build and push the orchestrator Docker image to ACR
+5. Build the React frontend and deploy to Static Web Apps
+6. Wire everything together: SWA URL → CORS, Container App URL → Cosmos endpoint env var
 
 After deployment, `azd` prints the frontend URL. Open it to use the agent.
 
