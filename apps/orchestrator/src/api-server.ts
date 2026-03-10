@@ -321,6 +321,11 @@ app.post("/api/mail/draft", async (req: Request, res: Response, next: NextFuncti
   }
 });
 
+// GET /api/health — liveness probe for Container Apps
+app.get("/api/health", (_req: Request, res: Response) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 // GET /api/metrics  (T6.2)
 app.get("/api/metrics", (_req: Request, res: Response) => {
   res.json(metrics.snapshot());

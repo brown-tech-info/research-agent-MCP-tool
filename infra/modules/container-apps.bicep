@@ -131,10 +131,32 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
               secretRef: 'tavily-api-key'
             }
           ]
+          probes: [
+            {
+              type: 'Liveness'
+              httpGet: {
+                path: '/api/health'
+                port: 3001
+              }
+              initialDelaySeconds: 10
+              periodSeconds: 30
+              failureThreshold: 3
+            }
+            {
+              type: 'Readiness'
+              httpGet: {
+                path: '/api/health'
+                port: 3001
+              }
+              initialDelaySeconds: 10
+              periodSeconds: 10
+              failureThreshold: 3
+            }
+          ]
         }
       ]
       scale: {
-        minReplicas: 0
+        minReplicas: 1
         maxReplicas: 3
         rules: [
           {
